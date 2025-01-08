@@ -1,47 +1,55 @@
 {
   "cookie": [
-    "Your pan.quark.cn Cookie1, Only this one will do save task."
+    "b-user-id=9dde29c1-652f-8b3b-844a-47c17b490b3d; _UP_A4A_11_=wb96a11c5ffc4953a3f38715ef111d2e; _UP_335_2B_=1; __sdid=AAQ9bOSR6j4Fwxif3RTCjv78ZJhlrFxP0qWu1tMF6XqJLjaso2Xuj1xMD445 y7t6f4=; _UP_30C_6A_=st96c620191s8hxur7kevsl50l74kh6g; _UP_TS_=sg120f0e452b3f0066f5837f20f532420fb; _UP_E37_B7_=sg120f0e452b3f0066f5837f20f532420fb; _UP_TG_=st96c620191s8hxur7kevsl50l74kh6g; _UP_D_=pc; cna=vIPqH23W9CcCAdoRjb0Yb2Ki; __pus=74b0c6ac04d511ba5399d040ba4c0a09AAQN4segjtjcS9APqE9l/bNzi1xHv3qoth0K8zFRflajuBqkrccRm87ZmmteRrRQdQNLaw12vNBtaldt0dCsgKDm; __kp=0a7b0150-c1cb-11ef-bc73-a9d10c491939; __kps=AAQUvUMzVqwICOOKuyyYvU4L; __ktd=/eAKgTsvLUr4iRV9CuN5/g==; __uid=AAQUvUMzVqwICOOKuyyYvU4L; isg=BAsLUjQw6KNwJTVEpo5gbjRVmqn1oB8iKsK5dH0I58qhnCv-BXCvcqk6cpxy5Xca; tfstk=gd5nnTVBXhifmlSxvGRQhKmEj32TR2OWfghJ2QKzQh-62y_RzQlP2adpUk_Rj3-wlz1pL8ta_gLX82JUxG4lvaGJYHCJZLSvTL6p2HKkZas0WoFYMw_BNQEYDSH_vYZBN3PJaRdNBucbToFYMwyeRQQaD6pLLItDzQ8eLbkaSEtZ8Q-eUckwuh-yagJeb58yzbueYp-aSUtw4QRP4Nk3SV-d4M1ajCJSfeY2r1YHKn73hbllsjpH0w-iaVfM-StV8hcraHZiIFQP4ucJgtsGZK5TZfOdoORwr_aqE3vcLML1qSceY1bFTHCUXXKFONWAwirtpHWDrZBl0zHBWLfGxTbgbvYOWM1DTsqn9Fd6jKWV8lHMSO7dsdC4mbvCQM6XE_ETGBBAk_9VTWmXXKTljKB3mXjV4oMZ3QDrNFzR_YMWLFTMDCQUSZ00IAYQSPDVhp868SUgSYgpLFTMDP4i31Je5ePA.; xlly_s=1; __puus=ce75d1e802c4a126f8467e90b3b0c89fAARGffPDBtbdHP9NPHYPDbwkG7BvcUPfUklIJzIbEw8E69NV7GAcosvW9pt1n2Bgz 75nV4g9PF9frprwMbZE/dd6NDx zhXaqhFc4YWjGdVygWuncjaq02Ka2fMzZQ08KVXF9XgSIt1rko19vBeJwT5Xn94xq5BV8zAxUHM7liQq/S/NCztHHuh5A9ivtug9Bx6LDZeh8le6ipLS28xLIwi;kps=LuHEfBEFZVzpe3GWoV/kKGlwKGeckJddo00bp696y69xLeeN+nnefGgbhKGP1/+GjDpFn/EVUTVaLvbSRsJ5aZxyLhnly2zyZhs52I8knWEQ0w==;sign=LuEoHJDwWnWGi8MXpLPoBYnRf6tR7lX64o55mCmAhw44afqWqKXnOdotonE0l0DTo5E=;vcode=1735791170345"
   ],
   "push_config": {
     "QUARK_SIGN_NOTIFY": true,
     "其他推送渠道//此项可删": "配置方法同青龙"
   },
-  "media_servers": {
+  "tasklist": [
+    {
+      "taskname": "大奉打更人4K",
+      "shareurl": "https://pan.quark.cn/s/c7f1238312ba",
+      "savepath": "/z媒体/连载中/D 大-奉-D-更-R",
+      "pattern": "",
+      "replace": "",
+      "enddate": "2099-01-30",
+      "update_subdir": "",
+      "addition": {
+        "emby": {
+          "media_id": ""
+        }
+      }
+    },
+    {
+      "taskname": "奇怪的她 韩剧 喜剧 奇幻",
+      "shareurl": "https://pan.quark.cn/s/f02446a7e235",
+      "savepath": "/z媒体/连载中/奇怪的她 韩剧 喜剧 奇幻",
+      "pattern": "",
+      "replace": "",
+      "enddate": "2099-01-30",
+      "runweek": [
+        2,
+        4,
+        6
+      ],
+      "addition": {
+        "emby": {
+          "media_id": ""
+        }
+      }
+    }
+  ],
+  "plugins": {
     "emby": {
       "url": "",
       "token": ""
     }
   },
-  "tasklist": [
-    {
-      "taskname": "测试-魔法匹配剧集（这是一组有效分享，配置CK后可测试任务是否正常）",
-      "shareurl": "https://pan.quark.cn/s/d07a34a9c695#/list/share/7e25ddd87cf64443b637125478733295-夸克自动转存测试",
-      "savepath": "/夸克自动转存测试",
-      "pattern": "$TV",
-      "replace": "",
-      "enddate": "2099-01-30",
-      "update_subdir": "4k|1080p"
-    },
-    {
-      "taskname": "测试-广告过滤",
-      "shareurl": "https://pan.quark.cn/s/d07a34a9c695#/list/share/7e25ddd87cf64443b637125478733295-夸克自动转存测试/680d91e490814da0927c38b432f88edc-带广告文件夹",
-      "savepath": "/夸克自动转存测试/带广告文件夹",
-      "pattern": "【XX电影网】(.*)\\.(mp4|mkv)",
-      "replace": "\\1.\\2",
-      "enddate": "2099-01-30"
-    },
-    {
-      "taskname": "测试-超期任务",
-      "shareurl": "https://pan.quark.cn/s/d07a34a9c695#/list/share/7e25ddd87cf64443b637125478733295-夸克自动转存测试",
-      "savepath": "/夸克自动转存测试",
-      "pattern": "",
-      "replace": "",
-      "enddate": "2000-01-30",
-      "runweek": [
-        2,
-        4,
-        6
-      ]
+  "magic_regex": {
+    "$TV": {
+      "pattern": ".*?(?<!\\d)([Ss]\\d{1,2})?([Ee]?[Pp]?[Xx]?\\d{1,3})(?!\\d).*?\\.(mp4|mkv)",
+      "replace": "\\1\\2.\\3"
     }
-  ]
+  }
 }

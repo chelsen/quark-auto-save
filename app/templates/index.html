@@ -42,6 +42,11 @@
                 <i class="bi bi-list-task"></i> 任务列表
               </a>
             </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#" :class="{active: activeTab === 'batchsave'}" @click="changeTab('batchsave')">
+                <i class="bi bi-list-task"></i> 批量转存
+              </a>
+            </li>
             <h6 class="sidebar-heading px-3 mt-4 mb-1 text-muted">dashboard</h6>
             <li class="nav-item">
               <a class="nav-link" href="/logout">
@@ -326,7 +331,43 @@
             </div>
           </div>
 
-          <div class="bottom-buttons">
+          <div v-if="activeTab === 'batchsave'">
+            <div class="row title">
+              <div class="col">
+                <h2>批量转存</h2>
+              </div>
+            </div>
+            <hr>
+            <div class="row form-group">
+              <label class="col-form-label col-md-3">分享链接文本</label>
+              <div class="input-group col-md-9">
+                <textarea rows="10" v-model="batch_task.share_text" class="form-control"></textarea>
+              </div>
+            </div>
+            <div class="row form-group">
+              <label class="col-md-3 col-form-label">保存路径</label>
+              <div class="input-group col-md-9">
+                <input type="text" class="form-control" v-model="batch_task.save_path" placeholder="必填">
+                <!--                  <div class="input-group-append">-->
+                <!--                    <button class="btn btn-secondary" type="button" v-if="smart_param.savepath && batch_task.save_path != smart_param.origin_savepath" @click="batch_task.save_path = smart_param.origin_savepath"><i class="-->
+                <!--                                                  bi bi-reply"></i></button>-->
+                <!--                    <button class="btn btn-outline-secondary dropdown-toggle" type="button" @click="getSavepathDirs(batch_task.save_path)" data-toggle="dropdown" aria-expanded="false">选择</button>-->
+                <!--                    <div class="dropdown-menu" style="max-height: 300px; min-width: 200px; overflow-y: auto;">-->
+                <!--                      <a class="dropdown-item" @click.stop.prevent="selectSavepath(index,getParentDirectory(batch_task.save_path),'..')" href="#">..</a>-->
+                <!--                      <span v-if="!savepaths.some(item => item.dir)" class="dropdown-item disabled">无子目录</span>-->
+                <!--                      <a v-for="(item, key) in savepaths" :class="{'disabled': item.fid === 0 || !item.dir}" class="dropdown-item" @click.stop.prevent="selectSavepath(index,item.fid,item.file_name)" href="#">-->
+                <!--                        <i class="bi" :class="item.dir ? 'bi-folder2' : 'bi-file-earmark'"></i> {{ item.file_name }}-->
+                <!--                        <i class="bi bi-trash3-fill text-danger" @click.stop.prevent="deleteFile(item.fid,item.file_name,item.dir)" style="position: absolute; right: 10px; pointer-events: auto;"></i>-->
+                <!--                      </a>-->
+                <!--                    </div>-->
+                <!--                  </div>-->
+              </div>
+            </div>
+            <div class="bottom-buttons">
+              <button type="button" class="btn btn-primary" title="转存" @click="runBatchSave()"><i class="bi bi-play-fill"></i></button>
+            </div>
+          </div>
+          <div v-if="['config','tasklist'].includes(activeTab)" class="bottom-buttons">
             <button class="btn btn-success" title="保存 CTRL+S"><i class="bi bi-floppy2-fill"></i></button>
             <button type="button" class="btn btn-primary" title="运行 CTRL+R" @click="runScriptNow()"><i class="bi bi-play-fill"></i></button>
             <button type="button" class="btn btn-info" @click="scrollToX(0)" @dblclick="scrollToX()" data-toggle="tooltip" data-placement="top" title="单击回顶，双击到底"><i class="bi bi-chevron-bar-up"></i></button>
@@ -411,6 +452,10 @@
           media_servers: {},
           tasklist: [],
           magic_regex: {}
+        },
+        batch_task: {
+          share_text: "",
+          save_path: ""
         },
         newTask: {
           taskname: "",
@@ -700,6 +745,56 @@
               source.close();
               // 运行后刷新数据
               this.fetchData();
+            } else {
+              this.run_log += event.data + '\n';
+              // 在更新 run_log 后将滚动条滚动到底部
+              this.$nextTick(() => {
+                const modalBody = document.querySelector('.modal-body');
+                modalBody.scrollTop = modalBody.scrollHeight;
+              });
+            }
+          };
+          source.onerror = (error) => {
+            this.modalLoading = false
+            console.error('Error:', error);
+            source.close();
+          };
+        },
+        parseBatchSave() {
+          const urlPattern = /https?:\/\/pan.quark[^\s]+/g;
+          const urls = this.batch_task.share_text.match(urlPattern);
+          let res = '';
+          if (urls) {
+            urls.forEach(url => console.log(url));
+          } else {
+            res = '没有找到任何URL';
+            console.log("没有找到任何URL");
+          }
+          const urlData = {
+            urls: urls,
+            savePath: this.batch_task.save_path
+          }
+          axios.post('/update_batch_save', urlData)
+                  .then(response => {
+                    res = response.data;
+                    console.log('Batch saved successfully:', response.data);
+                  })
+                  .catch(error => {
+                    res = error;
+                    console.error('Error saving config:', error);
+                  });
+          return res;
+        },
+        runBatchSave() {
+          $('#logModal').modal('toggle')
+          this.modalLoading = true
+          this.run_log = ''
+          this.run_log += this.parseBatchSave();
+          const source = new EventSource(`/run_batch_save`);
+          source.onmessage = (event) => {
+            if (event.data == "[DONE]") {
+              this.modalLoading = false
+              source.close();
             } else {
               this.run_log += event.data + '\n';
               // 在更新 run_log 后将滚动条滚动到底部

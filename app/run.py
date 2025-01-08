@@ -44,6 +44,8 @@ def get_app_ver():
 PYTHON_PATH = "python3" if os.path.exists("/usr/bin/python3") else "python"
 SCRIPT_PATH = os.environ.get("SCRIPT_PATH", "./quark_auto_save.py")
 CONFIG_PATH = os.environ.get("CONFIG_PATH", "./config/quark_config.json")
+BATCH_TASK_SCRIPT_PATH = os.environ.get("SCRIPT_PATH", "./quark_batch_save.py")
+BATCH_TASK_CONFIG_PATH = os.environ.get("CONFIG_PATH", "./config/batch_save_task.json")
 PLUGIN_FLAGS = os.environ.get("PLUGIN_FLAGS", "")
 DEBUG = os.environ.get("DEBUG", False)
 
@@ -215,6 +217,75 @@ def run_script_now():
         content_type="text/event-stream;charset=utf-8",
     )
 
+@app.route("/update_batch_save", methods=["POST"])
+def update_batch_save():
+    if not is_login():
+        return "未登录"
+    data = request.json
+    # 写入 JSON
+    with open(BATCH_TASK_CONFIG_PATH, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, sort_keys=False, indent=2)
+    return "解析批量URL完成"
+
+@app.route("/run_batch_save", methods=["GET"])
+def run_batch_save():
+    if not is_login():
+        return "未登录"
+    # 读取JSON
+    with open(BATCH_TASK_CONFIG_PATH, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    batch_save_task = []
+    for url in data['urls']:
+        print("解析 url: " + url)
+        share_detail = get_share_detail_by_url(url)
+        task = {
+            "taskname": url.replace("https://pan.quark.cn/s/", ""),
+            "shareurl": url,
+            "savepath": data['savePath'] + "/" + share_detail['share']['title'],
+            "pattern": "",
+            "replace": "",
+            "enddate": "2099-01-30",
+            "update_subdir": "",
+            "addition": {
+                "emby": {
+                    "media_id": ""
+                }
+            }
+        }
+        batch_save_task.append(task)
+    command = [PYTHON_PATH, "-u", BATCH_TASK_SCRIPT_PATH, CONFIG_PATH, str(batch_save_task)]
+    logging.info(
+        f">>> 单次批量转存，共{len(batch_save_task)}个任务"
+    )
+
+    def generate_output():
+        # 设置环境变量
+        process_env = os.environ.copy()
+        process_env["PYTHONIOENCODING"] = "utf-8"
+        process = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True,
+            encoding="utf-8",
+            errors="replace",
+            bufsize=1,
+            env=process_env,
+        )
+        try:
+            for line in iter(process.stdout.readline, ""):
+                logging.info(line.strip())
+                yield f"data: {line}\n\n"
+            yield "data: [DONE]\n\n"
+        finally:
+            process.stdout.close()
+            process.wait()
+
+    return Response(
+        stream_with_context(generate_output()),
+        content_type="text/event-stream;charset=utf-8",
+    )
 
 @app.route("/task_suggestions")
 def get_task_suggestions():
@@ -236,13 +307,7 @@ def get_share_files():
     if not is_login():
         return jsonify({"error": "未登录"})
     shareurl = request.args.get("shareurl", "")
-    account = Quark("", 0)
-    pwd_id, passcode, pdir_fid = account.get_id_from_url(shareurl)
-    is_sharing, stoken = account.get_stoken(pwd_id, passcode)
-    if not is_sharing:
-        return jsonify({"error": stoken})
-    share_detail = account.get_detail(pwd_id, stoken, pdir_fid, 1)
-    return jsonify(share_detail)
+    return jsonify(get_share_detail_by_url(shareurl))
 
 
 @app.route("/get_savepath")
@@ -314,6 +379,14 @@ def reload_tasks():
         logging.info(">>> no crontab")
         return False
 
+def get_share_detail_by_url(shareurl):
+    account = Quark("", 0)
+    pwd_id, passcode, pdir_fid = account.get_id_from_url(shareurl)
+    is_sharing, stoken = account.get_stoken(pwd_id, passcode)
+    if not is_sharing:
+        return {"error": stoken}
+    share_detail = account.get_detail(pwd_id, stoken, pdir_fid, 1)
+    return share_detail
 
 def init():
     global task_plugins_config
