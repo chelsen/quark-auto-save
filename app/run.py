@@ -44,8 +44,9 @@ def get_app_ver():
 PYTHON_PATH = "python3" if os.path.exists("/usr/bin/python3") else "python"
 SCRIPT_PATH = os.environ.get("SCRIPT_PATH", "./quark_auto_save.py")
 CONFIG_PATH = os.environ.get("CONFIG_PATH", "./config/quark_config.json")
-BATCH_TASK_SCRIPT_PATH = os.environ.get("SCRIPT_PATH", "./quark_batch_save.py")
-BATCH_TASK_CONFIG_PATH = os.environ.get("CONFIG_PATH", "./config/batch_save_task.json")
+BATCH_TASK_SCRIPT_PATH = os.environ.get("BATCH_TASK_SCRIPT_PATH", "./quark_batch_save.py")
+BATCH_TASK_CONFIG_PATH = os.environ.get("BATCH_TASK_CONFIG_PATH", "./config/batch_save_task.json")
+SHARE_DATA_PATH = os.environ.get("SHARE_DATA_PATH", "./config/share_data.json")
 PLUGIN_FLAGS = os.environ.get("PLUGIN_FLAGS", "")
 DEBUG = os.environ.get("DEBUG", False)
 
@@ -258,7 +259,6 @@ def run_batch_save():
     logging.info(
         f">>> 单次批量转存，共{len(batch_save_task)}个任务"
     )
-
     def generate_output():
         # 设置环境变量
         process_env = os.environ.copy()
@@ -286,6 +286,14 @@ def run_batch_save():
         stream_with_context(generate_output()),
         content_type="text/event-stream;charset=utf-8",
     )
+
+@app.route("/rebate_share_text", methods=["GET"])
+def get_rebate_share_text():
+    if not is_login():
+        return redirect(url_for("login"))
+    with open(SHARE_DATA_PATH, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    return jsonify(data)
 
 @app.route("/task_suggestions")
 def get_task_suggestions():

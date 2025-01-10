@@ -13,9 +13,12 @@ import sys
 import json
 import time
 import random
+from fileinput import filename
+
 import requests
 import importlib
 from datetime import datetime
+from share_data_manager import DataHandler
 
 # 兼容青龙
 try:
@@ -186,7 +189,7 @@ class Quark:
         if "headers" in kwargs:
             headers = kwargs["headers"]
             del kwargs["headers"]
-        if self.mparam and "share" in url and self.BASE_URL in url:
+        if self.mparam and "share" in url and self.BASE_URL in url and not url.endswith("clouddrive/share") :
             url = url.replace(self.BASE_URL, self.BASE_URL_APP)
             kwargs["params"].update(
                 {
@@ -217,7 +220,7 @@ class Quark:
             del headers["cookie"]
         try:
             response = requests.request(method, url, headers=headers, **kwargs)
-            # print(f"{response.text}")
+            # print(f" url={url}, response={response.text}")
             # response.raise_for_status()  # 检查请求是否成功，但返回非200也会抛出异常
             return response
         except Exception as e:
@@ -401,7 +404,144 @@ class Quark:
         ).json()
         return response
 
+    def create_share_task(self, fid_list, title, url_type, expired_type):
+        """
+        创建分享任务
+        :param fid_list 文件fid数组
+        :param title 文件标题
+        :param url_type: 提取码 1=不需要；2=需要
+        :param expired_type: 有效期 1=永久；2=1天；3=7天；4=30天；
+        :return:
+          {
+            "status": 200,
+            "code": 0,
+            "message": "ok",
+            "timestamp": 1736322322,
+            "data": {
+                "task_id": "7e729b7ac72e48eab3e1f4092b8080fd",
+                "task_sync": false
+            },
+            "metadata": {
+                "tq_gap": 100
+            }
+        }
+        """
+        url = f"{self.BASE_URL}/1/clouddrive/share"
+        querystring = {
+            "pr": "ucpro",
+            "fr": "pc",
+            "uc_param_str": ""
+        }
+        payload = {"fid_list":fid_list,"title":title,"url_type": url_type,"expired_type": expired_type}
+        response = self._send_request(
+            "POST", url, json=payload, params=querystring
+        ).json()
+        return response
+
+    def share_password(self, share_id):
+        """
+        获取分享链接
+        :param share_id:
+        :return
+            {
+                "status": 200,
+                "code": 0,
+                "message": "ok",
+                "timestamp": 1736320148,
+                "data": {
+                    "title": "纯音乐.-.[神奇的α波.潜意识疗法.记忆力强化].专辑.(FLAC)",
+                    "sub_title": "我用网盘给你分享文件，赶快查收吧。",
+                    "share_type": 0,
+                    "pwd_id": "b1e0c3f4823d",
+                    "share_url": "https://pan.quark.cn/s/b1e0c3f4823d",
+                    "url_type": 1,
+                    "expired_type": 2,
+                    "file_num": 1,
+                    "expired_at": 1736438399000,
+                    "expire_timestamp": 1736406547989,
+                    "first_file": {
+                        "fid": "27369a16cb4f4b73b249c4b61ea88bcd",
+                        "category": 0,
+                        "file_type": 0,
+                        "format_type": "",
+                        "name_space": 0,
+                        "series_dir": false,
+                        "upload_camera_root_dir": false,
+                        "fps": 0.0,
+                        "like": 0,
+                        "risk_type": 0,
+                        "file_name_hl_start": 0,
+                        "file_name_hl_end": 0,
+                        "duration": 0,
+                        "scrape_status": 0,
+                        "ban": false,
+                        "backup_source": false,
+                        "offline_source": false,
+                        "save_as_source": false,
+                        "owner_drive_type_or_default": 0,
+                        "cur_version_or_default": 0,
+                        "dir": true,
+                        "file": false,
+                        "_extra": {}
+                    },
+                    "path_info": "../音乐",
+                    "partial_violation": false,
+                    "first_layer_file_categories": [
+                        0
+                    ],
+                    "download_pvlimited": false
+                }
+            }
+        """
+        url = f"{self.BASE_URL}/1/clouddrive/share/password"
+        querystring = {
+            "pr": "ucpro",
+            "fr": "pc",
+            "uc_param_str": ""
+        }
+        payload = {"share_id": share_id}
+        response = self._send_request(
+            "POST", url, json=payload, params=querystring
+        ).json()
+        return response
+
     def query_task(self, task_id):
+        """
+        :param task_id:
+        :return:
+        {
+            "status": 200,
+            "code": 0,
+            "message": "ok",
+            "timestamp": 1736322322,
+            "data": {
+                "task_id": "7e729b7ac72e48eab3e1f4092b8080fd",
+                "event_id": "97xz3p-24d1e669a5369d",
+                "task_type": 8,
+                "task_title": "分享",
+                "status": 2,
+                "created_at": 1736322322259,
+                "finished_at": 1736322322584,
+                "share_id": "2eaa5abddcc04df4916915088b48e1f3",
+                "share": {
+                    "expired_timestamp": 1736408722259,
+                    "meaning_link": true
+                },
+                "save_as": {
+                    "save_as_select_top_fids": [],
+                    "is_pack": "0",
+                    "save_as_top_fids": []
+                },
+                "creation_snapshot": {
+                    "success_count": 437,
+                    "failed_count": 0
+                }
+            },
+            "metadata": {
+                "tq_gap": 1000
+            }
+        }
+        """
         retry_index = 0
         while True:
             url = f"{self.BASE_URL}/1/clouddrive/task"
@@ -902,6 +1042,7 @@ def do_save(account, tasklist=[]):
             print()
             is_new_tree = account.do_save_task(task)
             is_rename = account.do_rename_task(task)
+            share_path(account, task["savepath"])
 
             # 补充任务的插件配置
             def merge_dicts(a, b):
@@ -930,6 +1071,40 @@ def do_save(account, tasklist=[]):
                         )
     print()
 
+def share_path(account, path):
+    print(f"创建分享：")
+    get_fids = account.get_fids([path])
+    if get_fids :
+        fid = get_fids[0]["fid"]
+        file_name = get_fids[0]["file_name"]
+    else:
+        new_path = account.mkdir(path)["data"]
+        fid = new_path["fid"]
+        file_name = new_path["file_name"]
+
+    old_share_data = DataHandler().get_object_by_fid(fid)
+    if old_share_data and (not old_share_data['shareurl_ban'] or not '' == old_share_data['shareurl_ban']):
+        print(f"分享链接已存在，分享信息：\n {old_share_data['share_text']}")
+        return None
+
+    # 创建分享任务，永久有效
+    task_id = account.create_share_task([fid], file_name, 1, 1)["data"]["task_id"]
+    ## 延时查询分享任务
+    time.sleep(0.800)
+    share_id = account.query_task(task_id)["data"]["share_id"]
+    share_data = account.share_password(share_id)["data"]
+    new_item = {
+        "fid": fid,
+        "title": file_name,
+        "path": path,
+        "share_url": share_data["share_url"],
+        "shareurl_ban": "",
+        "share_text": file_name + "\n" + share_data["share_url"]
+    }
+    DataHandler().add_item(new_item, True)
+    print(f"分享信息：")
+    print(f"{new_item['share_text']}")
+    return share_data
 
 def main():
     global CONFIG_DATA

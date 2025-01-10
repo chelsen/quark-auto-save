@@ -1,0 +1,9 @@
+[
+  {
+    "fid": "文件fid",
+    "title": "分享标题",
+    "share_url" : "分享链接",
+    "shareurl_ban": "资源失效错误信息",
+    "share_text": "分享文本"
+  }
+]

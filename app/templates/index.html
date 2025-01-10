@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" xmlns="http://www.w3.org/1999/html">
 
 <head>
   <meta charset="UTF-8">
@@ -363,8 +363,17 @@
                 <!--                  </div>-->
               </div>
             </div>
+
+            <div class="row form-group">
+              <label class="col-form-label col-md-3">推广链接文本</label>
+              <div class="input-group col-md-9">
+                <textarea rows="10" v-model="batch_task.rebate_share_text" class="form-control"></textarea>
+              </div>
+            </div>
+
             <div class="bottom-buttons">
               <button type="button" class="btn btn-primary" title="转存" @click="runBatchSave()"><i class="bi bi-play-fill"></i></button>
+              <button type="button" class="btn btn-primary" title="获取链接" @click="getShareData()"><i class="bi bi-share-fill"></i></button>
             </div>
           </div>
           <div v-if="['config','tasklist'].includes(activeTab)" class="bottom-buttons">
@@ -455,7 +464,8 @@
         },
         batch_task: {
           share_text: "",
-          save_path: ""
+          save_path: "",
+          rebate_share_text: ""
         },
         newTask: {
           taskname: "",
@@ -809,6 +819,17 @@
             console.error('Error:', error);
             source.close();
           };
+        },
+        getShareData() {
+          axios.get('/rebate_share_text')
+                  .then(response => {
+                    response.data.forEach(item => {
+                      this.batch_task.rebate_share_text += item.share_text + `\n\n`;
+                    });
+                  })
+                  .catch(error => {
+                    console.error('Error fetching data:', error);
+                  });
         },
         getParentDirectory(path) {
           parentDir = path.substring(0, path.lastIndexOf('/'))
