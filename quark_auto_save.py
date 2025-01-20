@@ -19,6 +19,7 @@ import requests
 import importlib
 from datetime import datetime
 from share_data_manager import DataHandler
+from logger import Logger
 
 # 兼容青龙
 try:
@@ -32,7 +33,7 @@ except:
 CONFIG_DATA = {}
 NOTIFYS = []
 GH_PROXY = os.environ.get("GH_PROXY", "https://ghproxy.net/")
-
+LOG = Logger('log/all.log',level='debug')
 
 MAGIC_REGEX = {
     "$TV": {
@@ -62,7 +63,8 @@ def send_ql_notify(title, body):
 def add_notify(text):
     global NOTIFYS
     NOTIFYS.append(text)
-    print("📢", text)
+    # print("📢", text)
+    LOG.logger.info("📢"+ text)
     return text
 
 
@@ -823,6 +825,7 @@ class Quark:
                     if replace != ""
                     else share_file["file_name"]
                 )
+                save_name = save_name.replace("【tvzongheba】", "")
                 # 忽略后缀
                 if task.get("ignore_extension") and not share_file["dir"]:
                     compare_func = lambda a, b1, b2: (
@@ -839,8 +842,13 @@ class Quark:
                     for dir_file in dir_file_list
                 )
                 if not file_exists:
-                    share_file["save_name"] = save_name
-                    need_save_list.append(share_file)
+                    # 判断忽略的文件名
+                    pattern = re.compile(r'资源|公众号|汇总|持续更新|霸王龙', re.IGNORECASE)
+                    if pattern.search(share_file["file_name"]):
+                        print(f'忽略推广文件：{share_file["file_name"]}')
+                    else:
+                        share_file["save_name"] = save_name
+                        need_save_list.append(share_file)
                 elif share_file["dir"]:
                     # 存在并是一个文件夹
                     if task.get("update_subdir", False):
@@ -1083,7 +1091,7 @@ def share_path(account, path):
         file_name = new_path["file_name"]
 
     old_share_data = DataHandler().get_object_by_fid(fid)
-    if old_share_data and (not old_share_data['shareurl_ban'] or not '' == old_share_data['shareurl_ban']):
+    if old_share_data and '' == old_share_data['shareurl_ban']:
         print(f"分享链接已存在，分享信息：\n {old_share_data['share_text']}")
         return None
 
@@ -1102,8 +1110,10 @@ def share_path(account, path):
         "share_text": file_name + "\n" + share_data["share_url"]
     }
     DataHandler().add_item(new_item, True)
-    print(f"分享信息：")
-    print(f"{new_item['share_text']}")
+    LOG.logger.info('分享信息: ')
+    LOG.logger.info(new_item['share_text'])
+    # print(f"分享信息：")
+    # print(f"{new_item['share_text']}")
     return share_data
 
 def main():

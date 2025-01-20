@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>夸克自动转存</title>
+  <title>QUARK AUTO SAVE</title>
   <!-- CSS -->
   <link rel="stylesheet" href="./static/css/bootstrap.min.css">
   <link rel="stylesheet" href="./static/css/bootstrap-icons.min.css">
@@ -22,7 +22,7 @@
   <div id="app">
 
     <nav class="navbar navbar-dark sticky-top bg-dark flex-md-nowrap p-0">
-      <a class="navbar-brand col-md-3 col-lg-2 mr-0 px-3" href="#"><i class="bi bi-clouds"></i> 夸克自动转存</a>
+      <a class="navbar-brand col-md-3 col-lg-2 mr-0 px-3" href="#"><i class="bi bi-clouds"></i> QUARK AUTO SAVE</a>
       <button class="navbar-toggler position-absolute d-md-none collapsed" type="button" data-toggle="collapse" data-target="#sidebarMenu" aria-controls="sidebarMenu" aria-expanded="false">
         <span class="navbar-toggler-icon"></span>
       </button>
@@ -44,7 +44,7 @@
             </li>
             <li class="nav-item">
               <a class="nav-link" href="#" :class="{active: activeTab === 'batchsave'}" @click="changeTab('batchsave')">
-                <i class="bi bi-list-task"></i> 批量转存
+                <i class="bi bi-share-fill"></i> 转存分享
               </a>
             </li>
             <h6 class="sidebar-heading px-3 mt-4 mb-1 text-muted">dashboard</h6>
@@ -371,9 +371,17 @@
               </div>
             </div>
 
+            <div class="row form-group">
+              <label class="col-form-label col-md-3">检查链接结果</label>
+              <div class="input-group col-md-9">
+                <textarea rows="10" v-model="batch_task.check_and_reshare" class="form-control"></textarea>
+              </div>
+            </div>
+
             <div class="bottom-buttons">
-              <button type="button" class="btn btn-primary" title="转存" @click="runBatchSave()"><i class="bi bi-play-fill"></i></button>
+              <button type="button" class="btn btn-primary" title="解析转存" @click="parseBatchSave()"><i class="bi bi-save-fill"></i></button>
               <button type="button" class="btn btn-primary" title="获取链接" @click="getShareData()"><i class="bi bi-share-fill"></i></button>
+              <button type="button" class="btn btn-primary" title="检查链接" @click="checkAndReshare()"><i class="bi bi-file-check-fill"></i></button>
             </div>
           </div>
           <div v-if="['config','tasklist'].includes(activeTab)" class="bottom-buttons">
@@ -464,8 +472,9 @@
         },
         batch_task: {
           share_text: "",
-          save_path: "",
-          rebate_share_text: ""
+          save_path: "/temp/",
+          rebate_share_text: "",
+          check_and_reshare: ""
         },
         newTask: {
           taskname: "",
@@ -788,6 +797,7 @@
                   .then(response => {
                     res = response.data;
                     console.log('Batch saved successfully:', response.data);
+                    this.runBatchSave()
                   })
                   .catch(error => {
                     res = error;
@@ -799,7 +809,6 @@
           $('#logModal').modal('toggle')
           this.modalLoading = true
           this.run_log = ''
-          this.run_log += this.parseBatchSave();
           const source = new EventSource(`/run_batch_save`);
           source.onmessage = (event) => {
             if (event.data == "[DONE]") {
@@ -824,7 +833,18 @@
           axios.get('/rebate_share_text')
                   .then(response => {
                     response.data.forEach(item => {
-                      this.batch_task.rebate_share_text += item.share_text + `\n\n`;
+                      this.batch_task.rebate_share_text += item.share_text + `\n`;
+                    });
+                  })
+                  .catch(error => {
+                    console.error('Error fetching data:', error);
+                  });
+        },
+        checkAndReshare() {
+          axios.get('/check_and_reshare')
+                  .then(response => {
+                    response.data.forEach(item => {
+                      this.batch_task.check_and_reshare += item.share_text + `\n`;
                     });
                   })
                   .catch(error => {

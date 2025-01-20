@@ -22,11 +22,16 @@ import base64
 import json
 import sys
 import os
+import time
+import random
+import quark_auto_save
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, parent_dir)
 from quark_auto_save import Quark
 from quark_auto_save import Config
+from logger import Logger
+from share_data_manager import DataHandler
 
 
 def get_app_ver():
@@ -49,7 +54,7 @@ BATCH_TASK_CONFIG_PATH = os.environ.get("BATCH_TASK_CONFIG_PATH", "./config/batc
 SHARE_DATA_PATH = os.environ.get("SHARE_DATA_PATH", "./config/share_data.json")
 PLUGIN_FLAGS = os.environ.get("PLUGIN_FLAGS", "")
 DEBUG = os.environ.get("DEBUG", False)
-
+LOG = Logger('log/all.log',level='debug')
 task_plugins_config = {}
 
 app = Flask(__name__)
@@ -294,6 +299,27 @@ def get_rebate_share_text():
     with open(SHARE_DATA_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
     return jsonify(data)
+
+@app.route("/check_and_reshare", methods=["GET"])
+def check_and_reshare():
+    reshare_data = []
+    with open(SHARE_DATA_PATH, "r", encoding="utf-8") as f:
+        data = json.load(f)
+    for item in data:
+        # 随机休眠 0.1 秒至0.8秒
+        sleep_time = random.uniform(0.1, 0.8)
+        time.sleep(sleep_time)
+        share_detail = get_share_detail_by_url(item['share_url'])
+        if not share_detail.get("share", None):
+            fid = item['fid']
+            LOG.logger.warning('分享失效：' + item['title'] + '，fid=' + fid + '，原因：' + share_detail['error'])
+            DataHandler().update_item(fid, 'shareurl_ban',True)
+            quark_config = read_json()
+            account = Quark(quark_config["cookie"][0], 0)
+            quark_auto_save.share_path(account, item['path'])
+            reshare_data.append(DataHandler().get_object_by_fid(fid))
+
+    return reshare_data
 
 @app.route("/task_suggestions")
 def get_task_suggestions():

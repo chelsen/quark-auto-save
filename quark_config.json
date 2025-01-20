@@ -17,7 +17,15 @@
       "update_subdir": "",
       "addition": {
         "emby": {
-          "media_id": ""
+          "media_id": "",
+          "try_match": true
+        },
+        "alist_strm_gen": {
+          "auto_gen": true
+        },
+        "aria2": {
+          "auto_download": false,
+          "pause": false
         }
       }
     },
@@ -44,6 +52,33 @@
     "emby": {
       "url": "",
       "token": ""
+    },
+    "alist": {
+      "url": "",
+      "token": "",
+      "storage_id": ""
+    },
+    "alist_strm": {
+      "url": "",
+      "cookie": "",
+      "config_id": ""
+    },
+    "alist_strm_gen": {
+      "url": "",
+      "token": "",
+      "storage_id": "",
+      "strm_save_dir": "/media",
+      "strm_replace_host": ""
+    },
+    "aria2": {
+      "host_port": "172.17.0.1:6800",
+      "secret": "",
+      "dir": "/Downloads"
+    },
+    "plex": {
+      "url": "",
+      "token": "",
+      "quark_root_path": ""
     }
   },
   "magic_regex": {

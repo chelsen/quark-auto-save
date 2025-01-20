@@ -67,6 +67,23 @@ class DataHandler:
         else:
             print(f"未找到fid为{fid_str}的项")
 
+    def update_item(self, fid, name, value):
+        """
+        更新字典中的属性
+        :param fid:
+        :param name:
+        :param value:
+        :return:
+        """
+        fid_str = str(fid)
+        obj = self.get_object_by_fid(fid_str)
+        if obj:
+            obj[name] = value
+            self.fid_to_object[fid_str] = obj
+            self.save_to_file()
+        else:
+            print(f"未找到fid为{fid_str}的项")
+
 
     def save_to_file(self, file_path=None):
         """
