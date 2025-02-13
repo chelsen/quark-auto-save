@@ -24,6 +24,7 @@ import sys
 import os
 import time
 import random
+import re
 import quark_auto_save
 
 parent_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -241,18 +242,49 @@ def run_batch_save():
     with open(BATCH_TASK_CONFIG_PATH, "r", encoding="utf-8") as f:
         data = json.load(f)
 
+    # share_text = data['share_text']
+    LOG.logger.debug("shareText: " + data['shareText'])
+    share_text = re.sub(r"[「」]", "", data['shareText'])
+    # 将文本按行分割
+    lines = share_text.strip().split('\n')
+    # 初始化结果列表
+    share_raw = []
+
+    # 遍历所有行
+    i = 0
+    while i < len(lines):
+        line = lines[i].strip()
+        name = line
+        urls = []
+
+        # 检查下一行是否包含链接
+        if i + 1 < len(lines) and re.search(r'https://', lines[i + 1]):
+            # 分割链接并过滤出仅属于 pan.quark.cn 域名的链接
+            urls = [url for url in lines[i + 1].split() if 'https://pan.quark.cn/' in url]
+            i += 1  # 跳过已处理的链接行
+
+        # 对于每个有效的URL，添加到结果列表
+        for url in urls:
+            share_raw.append({
+                "name": name,
+                "url": url
+            })
+        i += 1
+
+
     batch_save_task = []
-    for url in data['urls']:
+    for share_item in share_raw:
+        url = share_item['url']
         print("解析 url: " + url)
         share_detail = get_share_detail_by_url(url)
         task = {
-            "taskname": url.replace("https://pan.quark.cn/s/", ""),
+            "taskname": share_item['name'],
             "shareurl": url,
             "savepath": data['savePath'] + "/" + share_detail['share']['title'],
-            "pattern": "",
-            "replace": "",
+            "pattern": data['pattern'],
+            "replace": data['replace'],
             "enddate": "2099-01-30",
-            "update_subdir": "",
+            "update_subdir": ".*",
             "addition": {
                 "emby": {
                     "media_id": ""
@@ -312,11 +344,11 @@ def check_and_reshare():
         share_detail = get_share_detail_by_url(item['share_url'])
         if not share_detail.get("share", None):
             fid = item['fid']
-            LOG.logger.warning('分享失效：' + item['title'] + '，fid=' + fid + '，原因：' + share_detail['error'])
+            LOG.logger.warning('分享失效：' + item['task_name'] + '，fid=' + fid + '，原因：' + share_detail['error'])
             DataHandler().update_item(fid, 'shareurl_ban',True)
             quark_config = read_json()
             account = Quark(quark_config["cookie"][0], 0)
-            quark_auto_save.share_path(account, item['path'])
+            quark_auto_save.share_path(account, item['path'], item['task_name'])
             reshare_data.append(DataHandler().get_object_by_fid(fid))
 
     return reshare_data

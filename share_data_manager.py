@@ -9,6 +9,7 @@ class DataHandler:
     fid_to_object = {}
     data_item = {
         "fid": "",
+        "task_name": "",
         "title": "",
         "path": "",
         "share_url": "",
@@ -135,6 +136,7 @@ if __name__ == "__main__":
     # 添加新项
     new_item = {
         "fid": "3aaa",
+        "task_name": "3标题",
         "title": "3标题",
         "path": "3path",
         "share_url": "3链接",

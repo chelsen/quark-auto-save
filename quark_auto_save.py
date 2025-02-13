@@ -159,7 +159,7 @@ class Config:
 class Quark:
     BASE_URL = "https://drive-pc.quark.cn"
     BASE_URL_APP = "https://drive-m.quark.cn"
-    USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) quark-cloud-drive/3.14.2 Chrome/112.0.5615.165 Electron/24.1.3.8 Safari/537.36 Channel/pckk_other_ch"
+    USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36"
 
     def __init__(self, cookie, index=None):
         self.cookie = cookie.strip()
@@ -221,8 +221,9 @@ class Quark:
             )
             del headers["cookie"]
         try:
+            # LOG.logger.debug(f" url={url}, 开始请求 ...")
             response = requests.request(method, url, headers=headers, **kwargs)
-            # print(f" url={url}, response={response.text}")
+            # LOG.logger.debug(f" url={url}, response={response.text}")
             # response.raise_for_status()  # 检查请求是否成功，但返回非200也会抛出异常
             return response
         except Exception as e:
@@ -760,7 +761,12 @@ class Quark:
 
         updated_tree = self.dir_check_and_save(task, pwd_id, stoken, pdir_fid)
         if updated_tree.size(1) > 0:
-            add_notify(f"✅《{task['taskname']}》添加追更：\n{updated_tree}")
+            fid = self.savepath_fid[task['savepath']]
+            self.check_share_url_and_reshare(fid, task['taskname'])
+            share_data = DataHandler().get_object_by_fid(fid)
+            LOG.logger.info(f"\n✅《{task['taskname']}》添加追更：\n{updated_tree}")
+            # node = updated_tree.
+            add_notify(f"{task['taskname']} 更至 集 \n{share_data['share_url'] if share_data else None} \n{updated_tree}")
             return updated_tree
         else:
             print(f"任务结束：没有新的转存任务")
@@ -843,7 +849,10 @@ class Quark:
                 )
                 if not file_exists:
                     # 判断忽略的文件名
-                    pattern = re.compile(r'资源|公众号|汇总|持续更新|霸王龙', re.IGNORECASE)
+                    # 所有包含推广信息的文件忽略
+                    pattern = re.compile(r'资源|公众号|汇总|电视剧合集|持续更新|霸王龙|禁商用|美剧整合', re.IGNORECASE)
+                    # 不以 mp4|mkv|mp3 结尾的推广文件忽略
+                    # pattern = re.compile(r'^(?!.*\.(?:mp4|mkv|mp3)$)(?=.*(?:资源|公众号|汇总|电视剧合集|持续更新|霸王龙|禁商用|美剧整合)).*$', re.IGNORECASE)
                     if pattern.search(share_file["file_name"]):
                         print(f'忽略推广文件：{share_file["file_name"]}')
                     else:
@@ -919,6 +928,9 @@ class Quark:
         if not pattern or not replace:
             return 0
         savepath = re.sub(r"/{2,}", "/", f"/{task['savepath']}{subdir_path}")
+        if not self.get_fids([savepath]):
+            LOG.logger.warning("❌ 目录 {savepath} fid获取失败，跳过重命名")
+            return 0
         if not self.savepath_fid.get(savepath):
             self.savepath_fid[savepath] = self.get_fids([savepath])[0]["fid"]
         dir_file_list = self.ls_dir(self.savepath_fid[savepath])
@@ -947,6 +959,17 @@ class Quark:
                             f"重命名：{dir_file['file_name']} → {save_name} 失败，{rename_return['message']}"
                         )
         return is_rename_count > 0
+
+    def check_share_url_and_reshare(self, fid, task_name):
+        share_item = DataHandler().get_object_by_fid(fid)
+        if not share_item or not share_item.get('share_url', None):
+            return
+        pwd_id, passcode, pdir_fid = self.get_id_from_url(share_item['share_url'])
+        is_sharing, stoken = self.get_stoken(pwd_id, passcode)
+        if not is_sharing:
+            LOG.logger.warning('分享失效：' + share_item['title'] + '，fid=' + fid + '，原因：' + stoken)
+            DataHandler().update_item(fid, 'shareurl_ban',True)
+            share_path(self, share_item['path'], task_name)
 
 
 def verify_account(account):
@@ -1050,7 +1073,7 @@ def do_save(account, tasklist=[]):
             print()
             is_new_tree = account.do_save_task(task)
             is_rename = account.do_rename_task(task)
-            share_path(account, task["savepath"])
+            share_path(account, task["savepath"], task['taskname'])
 
             # 补充任务的插件配置
             def merge_dicts(a, b):
@@ -1079,16 +1102,18 @@ def do_save(account, tasklist=[]):
                         )
     print()
 
-def share_path(account, path):
+def share_path(account, path, task_name):
     print(f"创建分享：")
     get_fids = account.get_fids([path])
     if get_fids :
         fid = get_fids[0]["fid"]
         file_name = get_fids[0]["file_name"]
     else:
-        new_path = account.mkdir(path)["data"]
-        fid = new_path["fid"]
-        file_name = new_path["file_name"]
+        LOG.logger.warning('未获取到fid，路径：' + path)
+        return None
+        # new_path = account.mkdir(path)["data"]
+        # fid = new_path["fid"]
+        # file_name = new_path.get("file_name")
 
     old_share_data = DataHandler().get_object_by_fid(fid)
     if old_share_data and '' == old_share_data['shareurl_ban']:
@@ -1099,15 +1124,21 @@ def share_path(account, path):
     task_id = account.create_share_task([fid], file_name, 1, 1)["data"]["task_id"]
     ## 延时查询分享任务
     time.sleep(0.800)
-    share_id = account.query_task(task_id)["data"]["share_id"]
+    task_data = account.query_task(task_id)
+    if not task_data["data"].get("share_id", None):
+        LOG.logger.warning('查询分享任务错误，路径：' + path)
+        return None
+
+    share_id = task_data["data"]["share_id"]
     share_data = account.share_password(share_id)["data"]
     new_item = {
         "fid": fid,
+        "task_name": task_name,
         "title": file_name,
         "path": path,
         "share_url": share_data["share_url"],
         "shareurl_ban": "",
-        "share_text": file_name + "\n" + share_data["share_url"]
+        "share_text": task_name + "\n" + share_data["share_url"]
     }
     DataHandler().add_item(new_item, True)
     LOG.logger.info('分享信息: ')
@@ -1177,7 +1208,7 @@ def main():
     if NOTIFYS:
         notify_body = "\n".join(NOTIFYS)
         print(f"===============推送通知===============")
-        send_ql_notify("【夸克自动追更】", notify_body)
+        send_ql_notify("【夸克资源更新】", notify_body)
         print()
     if cookie_form_file:
         # 更新配置
