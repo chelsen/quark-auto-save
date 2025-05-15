@@ -132,7 +132,7 @@ push_config = {
     'WXPUSHER_APP_TOKEN': '',           # wxpusher 的 appToken 官方文档: https://wxpusher.zjiecode.com/docs/ 管理后台: https://wxpusher.zjiecode.com/admin/
     'WXPUSHER_TOPIC_IDS': '',           # wxpusher 的 主题ID，多个用英文分号;分隔 topic_ids 与 uids 至少配置一个才行
     'WXPUSHER_UIDS': '',                # wxpusher 的 用户ID，多个用英文分号;分隔 topic_ids 与 uids 至少配置一个才行
-    
+
     'DODO_BOTTOKEN': '',                # DoDo机器人的token DoDo开发平台https://doker.imdodo.com/
     'DODO_BOTID': '',                   # DoDo机器人的id
     'DODO_LANDSOURCEID': '',            # DoDo机器人所在的群ID
@@ -839,10 +839,10 @@ def dodo_bot(title: str, content: str) -> None:
     通过 DoDo机器人 推送消息
     """
     required_keys = [
-        'DoDo_BOTTOKEN',
-        'DoDo_BOTID',
-        'DoDo_LANDSOURCEID',
-        'DoDo_SOURCEID'
+        'DODO_BOTTOKEN',
+        'DODO_BOTID',
+        'DODO_LANDSOURCEID',
+        'DODO_SOURCEID'
     ]
     if not all(push_config.get(key) for key in required_keys):
         missing = [key for key in required_keys if not push_config.get(key)]
@@ -851,10 +851,10 @@ def dodo_bot(title: str, content: str) -> None:
     print("DoDo 服务启动")
     url="https://botopen.imdodo.com/api/v2/personal/message/send"
 
-    botID=push_config.get('DoDo_BOTID')
-    botToken=push_config.get('DoDo_BOTTOKEN')
-    islandSourceId=push_config.get('DoDo_LANDSOURCEID')
-    dodoSourceId=push_config.get('DoDo_SOURCEID')
+    botID=push_config.get('DODO_BOTID')
+    botToken=push_config.get('DODO_BOTTOKEN')
+    islandSourceId=push_config.get('DODO_LANDSOURCEID')
+    dodoSourceId=push_config.get('DODO_SOURCEID')
 
     headers = {
         'Authorization': f'Bot {botID}.{botToken}',
@@ -863,7 +863,7 @@ def dodo_bot(title: str, content: str) -> None:
     }
     payload = json.dumps({
         "islandSourceId": islandSourceId,
-        "dodoSourceId": dodoSourceId, 
+        "dodoSourceId": dodoSourceId,
         "messageType": 1,
         "messageBody": {
             "content": f"{title}\n\n{content}"
